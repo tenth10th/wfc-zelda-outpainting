@@ -3,9 +3,8 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from itertools import chain
 from random import Random
-from typing import Iterable, MutableMapping, NewType, Sequence, TypeVar
+from typing import Iterable, MutableMapping, NewType, TypeVar
 
 
 class Direction(Enum):

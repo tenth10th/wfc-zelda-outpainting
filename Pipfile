@@ -5,10 +5,11 @@ name = "pypi"
 
 [packages]
 pygame = "*"
-ruff = "*"
-pytest = "*"
 
 [dev-packages]
+ruff = "*"
+pytest = "*"
+mypy = "*"
 
 [requires]
 python_version = "3.11"

@@ -55,3 +55,9 @@ skip-magic-trailing-comma = false
 
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+# Be better, pygame!
+filterwarnings = [
+    'ignore:pkg_resources is deprecated as an API',
+]

@@ -2,6 +2,16 @@ import itertools
 import pygame
 from pygame import Surface
 
+TILE_SOLIDITY = [
+    0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0,
+    0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+    1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,
+    1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0,
+    1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0,
+    1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+]
 
 def load_tile_images() -> list[Surface]:
     tile_images = []
@@ -48,6 +58,7 @@ def render_tileset(display: Surface, tiles: list[Surface]):
     x = 0
     y = 0
     max_width = 30 * 20
+
     for tile in tiles:
         display.blit(tile, (x, y))
         x += 30
@@ -55,6 +66,32 @@ def render_tileset(display: Surface, tiles: list[Surface]):
             y += 30
             x = 0
 
+
+def render_tiles_by_solidity(display: Surface, tiles: list[Surface], TILE_SOLIDITY: list[int]):
+    # Render tiles to pygame surface
+    # (simulating zelda_overworld_tiles.png)
+    x = 0
+    y = 0
+    max_width = 30 * 20
+
+    for i, tile in enumerate(tiles):
+        if TILE_SOLIDITY[i]:
+            display.blit(tile, (x, y))
+            x += 30
+            if x >= max_width:
+                y += 30
+                x = 0
+
+    y += 90
+    x = 0
+
+    for i, tile in enumerate(tiles):
+        if not TILE_SOLIDITY[i]:
+            display.blit(tile, (x, y))
+            x += 30
+            if x >= max_width:
+                y += 30
+                x = 0
 
 def render_map_quadrant(tiles: list[Surface], map_data: list[list[int]], from_x: int, from_y: int, display: Surface):
     for y_offset, x_offset in itertools.product(range(20), range(20)):
@@ -77,6 +114,7 @@ def main() -> None:
         display.fill((0, 0, 0))
 
         #render_tileset(display, tiles)
+        #render_tiles_by_solidity(display, tiles, TILE_SOLIDITY)
         render_map_quadrant(tiles, overworld_map, x, y, display)
 
         for event in pygame.event.get():

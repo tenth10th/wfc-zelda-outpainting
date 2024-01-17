@@ -1,6 +1,8 @@
 import itertools
 import pygame
 from pygame import Surface
+from pygame.font import Font
+
 
 TILE_SOLIDITY = [
     0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0,
@@ -12,6 +14,12 @@ TILE_SOLIDITY = [
     1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0,
 ]
+
+
+def load_font() -> Font:
+    pygame.font.init()
+    return Font(pygame.font.get_default_font(), 16)
+
 
 def load_tile_images() -> list[Surface]:
     tile_images = []
@@ -52,7 +60,7 @@ def init_display(width: int = 600, height: int = 600) -> Surface:
     return pygame.display.set_mode((width, height))
 
 
-def render_tileset(display: Surface, tiles: list[Surface]):
+def render_tileset(display: Surface, tiles: list[Surface], font: Font):
     # Render tiles to pygame surface
     # (simulating zelda_overworld_tiles.png)
     x = 0
@@ -66,8 +74,11 @@ def render_tileset(display: Surface, tiles: list[Surface]):
             y += 30
             x = 0
 
+    render_message(display, 'Walking Tour tileset, re-rendered \"in engine\"', 5, 250, font)
 
-def render_tiles_by_solidity(display: Surface, tiles: list[Surface], TILE_SOLIDITY: list[int]):
+    render_message(display, '(space to continue)', 5, 300, font)
+
+def render_tiles_by_solidity(display: Surface, tiles: list[Surface], TILE_SOLIDITY: list[int], font: Font):
     # Render tiles to pygame surface
     # (simulating zelda_overworld_tiles.png)
     x = 0
@@ -82,6 +93,8 @@ def render_tiles_by_solidity(display: Surface, tiles: list[Surface], TILE_SOLIDI
                 y += 30
                 x = 0
 
+    render_message(display, "Solid / blocking tiles", 5, 160, font)
+
     y += 90
     x = 0
 
@@ -93,35 +106,58 @@ def render_tiles_by_solidity(display: Surface, tiles: list[Surface], TILE_SOLIDI
                 y += 30
                 x = 0
 
-def render_map_quadrant(tiles: list[Surface], map_data: list[list[int]], from_x: int, from_y: int, display: Surface):
+    render_message(display, "Passable / blank tiles", 5, 340, font)
+
+    render_message(display, "(space to continue)", 5, 380, font)
+
+def render_map_quadrant(tiles: list[Surface], map_data: list[list[int]], from_x: int, from_y: int, display: Surface, font: Font):
     for y_offset, x_offset in itertools.product(range(20), range(20)):
         tile_id = map_data[from_y + y_offset][from_x + x_offset]
         tile = tiles[tile_id]
         display.blit(tile, (x_offset * 30, y_offset * 30))
+
+    pygame.draw.rect(display, (0, 0, 0), pygame.Rect(0, 0, 390, 70))
+
+    render_message(display, "Overworld Map Render: Scroll with arrow keys!", 5, 5, font)
+
+    render_message(display, "(space to continue)", 5, 35, font)
+
+
+def render_message(display: Surface, text: str, x: int, y: int, font: Font, r: int = 255, g: int = 255, b: int = 255) -> None:
+    message_surface = font.render(text, 1, (r, g, b))
+    display.blit(message_surface, (x, y))
 
 
 def main() -> None:
     display = init_display()
     tiles = load_tile_images()
     overworld_map = parse_tile_map()
+    font = load_font()
     loop = True
     x = 0
     y = 0
     max_y = len(overworld_map)-20
     max_x = len(overworld_map[0])-20
 
+    mode = 1
+
     while loop:
         display.fill((0, 0, 0))
 
-        #render_tileset(display, tiles)
-        #render_tiles_by_solidity(display, tiles, TILE_SOLIDITY)
-        render_map_quadrant(tiles, overworld_map, x, y, display)
+        if mode == 1:
+            render_tileset(display, tiles, font)
+        elif mode == 2:
+            render_tiles_by_solidity(display, tiles, TILE_SOLIDITY, font)
+        elif mode == 3:
+            render_map_quadrant(tiles, overworld_map, x, y, display, font)
 
         for event in pygame.event.get():
 
-            if event.type == pygame.QUIT:
-                loop = False
-            elif event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN:
+
+                if event.key == pygame.K_SPACE:
+                    mode = 1 if mode == 3 else mode + 1
+
                 if event.key == pygame.K_UP:
                     y = max(y-1, 0)
                 if event.key == pygame.K_DOWN:
@@ -133,6 +169,9 @@ def main() -> None:
 
                 if event.key in (pygame.K_q, pygame.K_ESCAPE):
                     loop = False
+
+            if event.type == pygame.QUIT:
+                loop = False
 
         pygame.display.flip()
 

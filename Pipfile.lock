@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e9706f953500ec60aba37f3dae49966d95033e23b4bbdd4a505280fd7876f420"
+            "sha256": "2131ecdeb245065e1ecca6d36874d2f8d51d88fb5384b846076a647175dfaae9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,6 +17,23 @@
         ]
     },
     "default": {
+        "datetype": {
+            "hashes": [
+                "sha256:97900d54e47903c7b545d1045f07c3da0b711ab8ecd3b8a288c9d0a89fe665cd",
+                "sha256:e99e1355bab88a9f7a92f8c84a8c6997a7427e73df88e15faaa873df11519020"
+            ],
+            "markers": "python_version >= '3.10'",
+            "version": "==2023.11.8"
+        },
+        "fritter": {
+            "hashes": [
+                "sha256:4e0f6cbe83b67bf96b6c986e48e72002ae1122d22b66abbd634317fad07886a0",
+                "sha256:cb988dbfac065990faff34c0b9c5a550578840f0ffccac7dc18de15c3cf3f08c"
+            ],
+            "index": "12700",
+            "markers": "python_version >= '3.9'",
+            "version": "==0.0.6"
+        },
         "pygame": {
             "hashes": [
                 "sha256:03879ec299c9f4ba23901b2649a96b2143f0a5d787f0b6c39469989e2320caf1",
@@ -78,7 +95,16 @@
                 "sha256:fe0228501ec616779a0b9c4299e837877783e18df294dd690b9ab0eed3d8aaab"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.6'",
             "version": "==2.5.2"
+        },
+        "tzdata": {
+            "hashes": [
+                "sha256:aa3ace4329eeacda5b7beb7ea08ece826c28d761cda36e747cfbf97996d39bf3",
+                "sha256:dd54c94f294765522c77399649b4fefd95522479a664a0cec87f41bebc6148c9"
+            ],
+            "markers": "python_version >= '2'",
+            "version": "==2023.4"
         }
     },
     "develop": {
@@ -121,6 +147,7 @@
                 "sha256:f5ac9a4eeb1ec0f1ccdc6f326bcdb464de5f80eb07fb38b5ddd7b0de6bc61e55"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.8'",
             "version": "==1.8.0"
         },
         "mypy-extensions": {
@@ -153,6 +180,7 @@
                 "sha256:b090cdf5ed60bf4c45261be03239c2c1c22df034fbffe691abe93cd80cea01d8"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==7.4.4"
         },
         "ruff": {
@@ -176,6 +204,7 @@
                 "sha256:f988746e3c3982bea7f824c8fa318ce7f538c4dfefec99cd09c8770bd33e6539"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==0.1.13"
         },
         "typing-extensions": {

@@ -169,8 +169,10 @@ class MapGenerator:
     ) -> MapGenerator:
         width = len(output[0])
         height = len(output)
-        ungenerated = [(x, y) for x in range(width) for y in range(height)]
-        random.shuffle(ungenerated)
+        ungenerated = [
+            (x, height - (y + 1)) for y in range(height) for x in range(width)
+        ]
+        # random.shuffle(ungenerated)
         return MapGenerator(
             width, height, output, trained, progress, ungenerated, random
         )

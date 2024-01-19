@@ -239,12 +239,14 @@ def main() -> None:
                 render_tiles_by_solidity(display, tiles, TILE_SOLIDITY, font)
             case 2:
                 render_map_quadrant(tiles, generated_map, x, y, display, font)
+            case 3:
+                render_map_quadrant(tiles, overworld_map, x, y, display, font)
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     mode += 1
-                    mode %= 3
+                    mode %= 4
                 if event.key in movement:
                     keys.add(event.key)
                 if event.key in (pygame.K_q, pygame.K_ESCAPE):

@@ -24,6 +24,11 @@ class TileChance:
 
 @dataclass
 class PossibleNeighbors:
+    """
+    A L{PossibleNeighbors} represents the possible neighbors of the tile
+    identified by C{id}, in each direction.
+    """
+
     id: TileId
     possibilities: MutableMapping[
         Direction, MutableMapping[TileId, TileChance]
@@ -40,7 +45,7 @@ compass = (
 )
 
 
-def in_bounds(targetx: int, targety: int, h: int, w: int) -> bool:
+def in_bounds(targetx: int, targety: int, w: int, h: int) -> bool:
     return (targetx >= 0) and (targetx < w) and (targety >= 0) and (targety < h)
 
 
@@ -48,13 +53,13 @@ T = TypeVar("T")
 
 
 def adjacents(
-    x: int, y: int, h: int, w: int, grid: list[list[T]]
+    x: int, y: int, w: int, h: int, grid: list[list[T]]
 ) -> Iterable[tuple[Direction, T]]:
     for direction, (deltax, deltay) in compass:
         targetx = x + deltax
         targety = y + deltay
-        if in_bounds(targetx, targety, h, w):
-            yield (direction, grid[targetx][targety])
+        if in_bounds(targetx, targety, w, h):
+            yield (direction, grid[targety][targetx])
 
 
 def weighted_choice(r: Random, x: Iterable[tuple[T, int]]) -> T:
@@ -73,60 +78,107 @@ class GeneratingTile:
         r: Random,
         x: int,
         y: int,
-        h: int,
         w: int,
+        h: int,
         in_progress: GeneratingMap,
         trained: TrainedSet,
-    ) -> None:
+    ) -> TileId:
         if self.remaining is None:
             self.remaining = set(trained.keys())
+        if len(self.remaining) == 1:
+            return next(iter(self.remaining))
         probabilities = {each: 1 for each in self.remaining}
-        for direction, other_generating_tile in adjacents(x, y, h, w, in_progress):
+        for direction, other_generating_tile in adjacents(x, y, w, h, in_progress):
             reversed = {
                 Direction.north: Direction.south,
                 Direction.east: Direction.west,
                 Direction.south: Direction.north,
                 Direction.west: Direction.east,
             }[direction]
-            for remaining_tile_id in other_generating_tile.remaining or set(
+            options_for_other_tile = other_generating_tile.remaining or set(
                 trained.keys()
-            ):
-                neighbors = trained[remaining_tile_id]
-                id_to_chance_for_us = neighbors.possibilities[reversed]
-                probabilities = {
-                    tile_id: (score + id_to_chance_for_us[tile_id].chance)
-                    for (tile_id, score) in probabilities.items()
-                    if tile_id in id_to_chance_for_us
-                }
+            )
+            unseen = set(probabilities.keys())
+            for other_tile_option in options_for_other_tile:
+                for possible_tile, possible_chance in (
+                    trained[other_tile_option].possibilities[reversed].items()
+                ):
+                    if possible_tile in probabilities:
+                        probabilities[possible_tile] += possible_chance.chance
+                        if possible_tile in unseen:
+                            unseen.remove(possible_tile)
+            for still_unseen in unseen:
+                del probabilities[still_unseen]
+
+        if not probabilities:
+            return TileId(99)
 
         chosen = weighted_choice(r, probabilities.items())
         self.remaining = set([chosen])
 
-        for direction, other_generating_tile in adjacents(x, y, h, w, in_progress):
+        for direction, other_generating_tile in adjacents(x, y, w, h, in_progress):
             other_generating_tile.remaining = (
                 other_generating_tile.remaining
                 if other_generating_tile.remaining is not None
                 else set(trained.keys())
             ) & set(trained[chosen].possibilities[direction])
+        return chosen
 
 
 GeneratingMap = list[list[GeneratingTile]]
+GeneratedMap = list[list[TileId]]
 TrainedSet = MutableMapping[TileId, PossibleNeighbors]
 
 
 class IdToTileMap(defaultdict):
     def __missing__(self, key: TileId) -> PossibleNeighbors:
-        return PossibleNeighbors(key)
+        result = self[key] = PossibleNeighbors(key)
+        return result
 
 
 def train_on_map(training: list[list[TileId]]) -> TrainedSet:
     assert training, "training data"
-    height = len(training)
     width = len(training[0])
+    height = len(training)
     id_to_tile: defaultdict[TileId, PossibleNeighbors] = IdToTileMap()
-    for x, row in enumerate(training):
+    for y, row in enumerate(training):
         assert len(row) == width, "uniform widths required"
-        for y, cell in enumerate(row):
-            for direction, adjacent in adjacents(x, y, height, width, training):
+        for x, cell in enumerate(row):
+            for direction, adjacent in adjacents(x, y, width, height, training):
                 id_to_tile[cell].possibilities[direction][adjacent].chance += 1
     return id_to_tile
+
+
+@dataclass
+class MapGenerator:
+    width: int
+    height: int
+    output: GeneratedMap
+    trained: TrainedSet
+    progress: GeneratingMap
+    ungenerated: list[tuple[int, int]]
+    random: Random
+
+    @classmethod
+    def new(
+        cls,
+        random: Random,
+        output: GeneratedMap,
+        trained: TrainedSet,
+        progress: GeneratingMap,
+    ) -> MapGenerator:
+        width = len(output[0])
+        height = len(output)
+        ungenerated = [(x, y) for x in range(width) for y in range(height)]
+        random.shuffle(ungenerated)
+        return MapGenerator(
+            width, height, output, trained, progress, ungenerated, random
+        )
+
+    def step(self) -> None:
+        if not self.ungenerated:
+            return
+        x, y = self.ungenerated.pop()
+        self.output[y][x] = self.progress[y][x].observe(
+            self.random, x, y, self.width, self.height, self.progress, self.trained
+        )

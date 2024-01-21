@@ -1,9 +1,12 @@
 import itertools
+from random import Random
 
 import pygame
 from fritter.boundaries import Cancellable
 from pygame import Surface
 from pygame.font import Font
+
+from wfc_model import GeneratingTile, TileId, train_on_map, MapGenerator
 
 # fmt: off
 TILE_SOLIDITY = [
@@ -43,7 +46,7 @@ def load_image(path: str, size: int = 30, remove_padding: int = 0) -> Surface:
     return surface
 
 
-def parse_tile_map() -> list[list[int]]:
+def parse_tile_map() -> list[list[TileId]]:
     int_map = []
 
     # Also from the Zelda Walking Tour: https://github.com/asweigart/nes_zelda_map_data
@@ -56,8 +59,8 @@ def parse_tile_map() -> list[list[int]]:
     return int_map
 
 
-def hex_to_int(hex_str: str) -> int:
-    return int(hex_str, 16)
+def hex_to_int(hex_str: str) -> TileId:
+    return TileId(int(hex_str, 16))
 
 
 def init_display(width: int = 600, height: int = 600) -> Surface:
@@ -122,14 +125,17 @@ def render_tiles_by_solidity(
 
 def render_map_quadrant(
     tiles: list[Surface],
-    map_data: list[list[int]],
+    map_data: list[list[TileId]],
     from_x: int,
     from_y: int,
     display: Surface,
     font: Font,
 ):
     for y_offset, x_offset in itertools.product(range(20), range(20)):
-        tile_id = map_data[from_y + y_offset][from_x + x_offset]
+        try:
+            tile_id = map_data[from_y + y_offset][from_x + x_offset]
+        except IndexError:
+            tile_id = TileId(99)
         tile = tiles[tile_id]
         display.blit(tile, (x_offset * 30, y_offset * 30))
 
@@ -167,9 +173,21 @@ def main() -> None:
     loop = True
     x = 0
     y = 0
-    max_y = len(overworld_map) - 20
-    max_x = len(overworld_map[0]) - 20
-    keys = set()
+    full_x = len(overworld_map[0])
+    full_y = len(overworld_map)
+    max_y = full_y - 20
+    max_x = full_x - 20
+    keys: set[int] = set()
+    generated_map = [
+        [TileId(99) for ignored_x in range(full_x)] for ignored_y in range(full_y)
+    ]
+    generating_map = [
+        [GeneratingTile() for ignored_x in range(full_x)] for ignored_y in range(full_y)
+    ]
+
+    print("overworld", len(overworld_map), len(overworld_map[0]))
+    print("generating", len(generating_map), len(generating_map[0]))
+    print("generated", len(generated_map), len(generated_map[0]))
 
     mode = 1
 
@@ -194,6 +212,7 @@ def main() -> None:
     def do_moves(steps: int, stopper: Cancellable) -> None:
         for pressed_key in keys:
             movement[pressed_key]()
+            print(x, y)
 
     movement = {
         pygame.K_UP: go_up,
@@ -203,21 +222,31 @@ def main() -> None:
     }
 
     repeatedly(scheduler, do_moves, EverySecond(1 / 60))
+    r = Random()
+
+    gen = MapGenerator.new(
+        r, generated_map, train_on_map(overworld_map), generating_map
+    )
 
     while loop:
         display.fill((0, 0, 0))
+        gen.step()
 
-        if mode == 1:
-            render_tileset(display, tiles, font)
-        elif mode == 2:
-            render_tiles_by_solidity(display, tiles, TILE_SOLIDITY, font)
-        elif mode == 3:
-            render_map_quadrant(tiles, overworld_map, x, y, display, font)
+        match mode:
+            case 0:
+                render_tileset(display, tiles, font)
+            case 1:
+                render_tiles_by_solidity(display, tiles, TILE_SOLIDITY, font)
+            case 2:
+                render_map_quadrant(tiles, generated_map, x, y, display, font)
+            case 3:
+                render_map_quadrant(tiles, overworld_map, x, y, display, font)
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    mode = 1 if mode == 3 else mode + 1
+                    mode += 1
+                    mode %= 4
                 if event.key in movement:
                     keys.add(event.key)
                 if event.key in (pygame.K_q, pygame.K_ESCAPE):

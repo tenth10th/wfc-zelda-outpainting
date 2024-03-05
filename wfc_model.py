@@ -84,7 +84,7 @@ class GeneratingTile:
         trained: TrainedSet,
     ) -> TileId:
         if self.remaining is None:
-            self.remaining = set(trained.keys())
+            self.remaining = set(trained.neighbors.keys())
         if len(self.remaining) == 1:
             return next(iter(self.remaining))
         probabilities = {each: 1 for each in self.remaining}
@@ -96,12 +96,12 @@ class GeneratingTile:
                 Direction.west: Direction.east,
             }[direction]
             options_for_other_tile = other_generating_tile.remaining or set(
-                trained.keys()
+                trained.neighbors.keys()
             )
             unseen = set(probabilities.keys())
             for other_tile_option in options_for_other_tile:
                 for possible_tile, possible_chance in (
-                    trained[other_tile_option].possibilities[reversed].items()
+                    trained.neighbors[other_tile_option].possibilities[reversed].items()
                 ):
                     if possible_tile in probabilities:
                         probabilities[possible_tile] += possible_chance.chance
@@ -120,14 +120,18 @@ class GeneratingTile:
             other_generating_tile.remaining = (
                 other_generating_tile.remaining
                 if other_generating_tile.remaining is not None
-                else set(trained.keys())
-            ) & set(trained[chosen].possibilities[direction])
+                else set(trained.neighbors.keys())
+            ) & set(trained.neighbors[chosen].possibilities[direction])
         return chosen
 
 
 GeneratingMap = list[list[GeneratingTile]]
 GeneratedMap = list[list[TileId]]
-TrainedSet = MutableMapping[TileId, PossibleNeighbors]
+
+@dataclass
+class TrainedSet:
+    neighbors: MutableMapping[TileId, PossibleNeighbors]
+    toplevel: MutableMapping[TileId, TileChance]
 
 
 class IdToTileMap(defaultdict):
@@ -146,7 +150,7 @@ def train_on_map(training: list[list[TileId]]) -> TrainedSet:
         for x, cell in enumerate(row):
             for direction, adjacent in adjacents(x, y, width, height, training):
                 id_to_tile[cell].possibilities[direction][adjacent].chance += 1
-    return id_to_tile
+    return TrainedSet(id_to_tile, {})
 
 
 @dataclass

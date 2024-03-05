@@ -87,7 +87,7 @@ class GeneratingTile:
             self.remaining = set(trained.neighbors.keys())
         if len(self.remaining) == 1:
             return next(iter(self.remaining))
-        probabilities = {each: 1 for each in self.remaining}
+        probabilities = {each: trained.toplevel[each].chance for each in self.remaining}
         for direction, other_generating_tile in adjacents(x, y, w, h, in_progress):
             reversed = {
                 Direction.north: Direction.south,
@@ -115,6 +115,7 @@ class GeneratingTile:
 
         chosen = weighted_choice(r, probabilities.items())
         self.remaining = set([chosen])
+        trained.toplevel[chosen].chance -= 1
 
         for direction, other_generating_tile in adjacents(x, y, w, h, in_progress):
             other_generating_tile.remaining = (
@@ -145,12 +146,14 @@ def train_on_map(training: list[list[TileId]]) -> TrainedSet:
     width = len(training[0])
     height = len(training)
     id_to_tile: defaultdict[TileId, PossibleNeighbors] = IdToTileMap()
+    toplevel: defaultdict[TileId, TileChance] = defaultdict(lambda: TileChance(0))
     for y, row in enumerate(training):
         assert len(row) == width, "uniform widths required"
         for x, cell in enumerate(row):
             for direction, adjacent in adjacents(x, y, width, height, training):
+                toplevel[cell].chance += 1
                 id_to_tile[cell].possibilities[direction][adjacent].chance += 1
-    return TrainedSet(id_to_tile, {})
+    return TrainedSet(id_to_tile, toplevel)
 
 
 @dataclass
@@ -176,7 +179,7 @@ class MapGenerator:
         ungenerated = [
             (x, height - (y + 1)) for y in range(height) for x in range(width)
         ]
-        # random.shuffle(ungenerated)
+        random.shuffle(ungenerated)
         return MapGenerator(
             width, height, output, trained, progress, ungenerated, random
         )
